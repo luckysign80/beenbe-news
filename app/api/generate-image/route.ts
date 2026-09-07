@@ -15,9 +15,10 @@ const RED = "#FF7A7A";
 const ORANGE = "#FFB000";
 
 const require = createRequire(import.meta.url);
-const ROBOTO_REGULAR = require.resolve("@fontsource/roboto/files/roboto-latin-400-normal.woff2");
-const ROBOTO_BOLD = require.resolve("@fontsource/roboto/files/roboto-latin-700-normal.woff2");
-const ROBOTO_BLACK = require.resolve("@fontsource/roboto/files/roboto-latin-900-normal.woff2");
+// resvg's native font loader does not reliably support WOFF2; use the bundled WOFF files.
+const ROBOTO_REGULAR = require.resolve("@fontsource/roboto/files/roboto-latin-400-normal.woff");
+const ROBOTO_BOLD = require.resolve("@fontsource/roboto/files/roboto-latin-700-normal.woff");
+const ROBOTO_BLACK = require.resolve("@fontsource/roboto/files/roboto-latin-900-normal.woff");
 
 function esc(value: string) {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -98,6 +99,7 @@ export async function POST(request: Request) {
       fitTo: { mode: "original" },
       font: {
         fontFiles: [ROBOTO_REGULAR, ROBOTO_BOLD, ROBOTO_BLACK],
+        loadSystemFonts: false,
         defaultFontFamily: "Roboto"
       }
     });
