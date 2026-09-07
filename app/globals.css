@@ -1,0 +1,28 @@
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body { background: #080808; color: #f0b90b; font-family: Arial, Helvetica, sans-serif; }
+.page { min-height: 100vh; display: grid; place-items: center; padding: 32px; }
+.card { width: min(720px, 100%); border: 1px solid #292929; border-radius: 24px; padding: 48px; background: #0e0e0e; box-shadow: 0 20px 80px rgba(0,0,0,.45); }
+.eyebrow { font-size: 12px; letter-spacing: .18em; font-weight: 800; }
+h1 { color: #fff; font-size: clamp(32px, 6vw, 58px); line-height: 1; margin: 14px 0; }
+.form { display: flex; gap: 12px; margin-top: 30px; }
+input { flex: 1; min-width: 0; padding: 17px 18px; border-radius: 12px; border: 1px solid #333; background: #050505; color: #fff; font-size: 18px; }
+button { border: 0; border-radius: 12px; padding: 0 24px; background: #f0b90b; color: #080808; font-weight: 900; cursor: pointer; }
+button:disabled { opacity: .5; cursor: wait; }
+.error { margin-top: 20px; color: #ff7676; }
+.result { margin-top: 32px; padding-top: 30px; border-top: 1px solid #292929; }
+.symbol { color: #fff; font-size: 22px; font-weight: 900; }
+.signal { margin-top: 8px; font-size: 42px; font-weight: 950; }
+.bullish { color: #f0b90b; } .bearish { color: #ff7a7a; } .neutral { color: #fff; } .high_risk { color: #ffb000; }
+.confidence { color: #999; margin-top: 6px; }
+.conclusion { color: #fff; font-size: clamp(22px, 4vw, 34px); line-height: 1.12; margin-top: 24px; }
+.powered { color: #777; font-size: 12px; margin-top: 30px; }
+.factorGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 28px; }
+.factor { border: 1px solid #252525; border-radius: 12px; padding: 13px; background: #0a0a0a; }
+.factorTop { display: flex; justify-content: space-between; gap: 8px; color: #fff; font-size: 13px; }
+.factorTop span { color: #f0b90b; font-size: 11px; font-weight: 800; }
+.factorDetail { color: #888; font-size: 12px; line-height: 1.35; margin-top: 8px; }
+.visualStage { margin-top: 24px; display: flex; justify-content: center; }
+.visualLoading { color: #f0b90b; font-size: 12px; letter-spacing: .08em; font-weight: 800; padding: 24px; }
+.visual { display: block; width: min(100%, 420px); height: auto; border-radius: 14px; border: 1px solid #252525; }
+@media (max-width: 560px) { .page { padding: 16px; } .card { padding: 28px; } .form { flex-direction: column; } button { min-height: 52px; } .factorGrid { grid-template-columns: 1fr; } }
