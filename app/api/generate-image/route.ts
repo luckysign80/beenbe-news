@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createRequire } from "node:module";
+import path from "node:path";
 import { Resvg } from "@resvg/resvg-js";
 
 export const runtime = "nodejs";
@@ -14,11 +14,12 @@ const MUTED = "#A0A0A0";
 const RED = "#FF7A7A";
 const ORANGE = "#FFB000";
 
-const require = createRequire(import.meta.url);
-// resvg's native font loader does not reliably support WOFF2; use the bundled WOFF files.
-const ROBOTO_REGULAR = require.resolve("@fontsource/roboto/files/roboto-latin-400-normal.woff");
-const ROBOTO_BOLD = require.resolve("@fontsource/roboto/files/roboto-latin-700-normal.woff");
-const ROBOTO_BLACK = require.resolve("@fontsource/roboto/files/roboto-latin-900-normal.woff");
+// Keep these as runtime filesystem paths so Turbopack does not try to parse
+// the font files as JavaScript modules during the build.
+const ROBOTO_DIR = path.join(process.cwd(), "node_modules", "roboto-fontface", "fonts", "roboto");
+const ROBOTO_REGULAR = path.join(ROBOTO_DIR, "Roboto-Regular.ttf");
+const ROBOTO_BOLD = path.join(ROBOTO_DIR, "Roboto-Bold.ttf");
+const ROBOTO_BLACK = path.join(ROBOTO_DIR, "Roboto-Black.ttf");
 
 function esc(value: string) {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
