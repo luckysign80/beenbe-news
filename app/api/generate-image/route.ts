@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { Resvg } from "@resvg/resvg-js";
 
@@ -16,9 +15,9 @@ const RED = "#FF7A7A";
 const ORANGE = "#FFB000";
 
 const require = createRequire(import.meta.url);
-const ROBOTO_REGULAR = readFileSync(require.resolve("@fontsource/roboto/files/roboto-latin-400-normal.woff2"));
-const ROBOTO_BOLD = readFileSync(require.resolve("@fontsource/roboto/files/roboto-latin-700-normal.woff2"));
-const ROBOTO_BLACK = readFileSync(require.resolve("@fontsource/roboto/files/roboto-latin-900-normal.woff2"));
+const ROBOTO_REGULAR = require.resolve("@fontsource/roboto/files/roboto-latin-400-normal.woff2");
+const ROBOTO_BOLD = require.resolve("@fontsource/roboto/files/roboto-latin-700-normal.woff2");
+const ROBOTO_BLACK = require.resolve("@fontsource/roboto/files/roboto-latin-900-normal.woff2");
 
 function esc(value: string) {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -98,7 +97,7 @@ export async function POST(request: Request) {
     const renderer = new Resvg(svg, {
       fitTo: { mode: "original" },
       font: {
-        fontBuffers: [ROBOTO_REGULAR, ROBOTO_BOLD, ROBOTO_BLACK],
+        fontFiles: [ROBOTO_REGULAR, ROBOTO_BOLD, ROBOTO_BLACK],
         defaultFontFamily: "Roboto"
       }
     });
