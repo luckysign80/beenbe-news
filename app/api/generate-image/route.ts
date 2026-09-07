@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import fs from "node:fs";
 import path from "node:path";
 import { Resvg } from "@resvg/resvg-js";
+import * as opentype from "opentype.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,15 +16,40 @@ const MUTED = "#A0A0A0";
 const RED = "#FF7A7A";
 const ORANGE = "#FFB000";
 
-// Keep these as runtime filesystem paths so Turbopack does not try to parse
-// the font files as JavaScript modules during the build.
 const ROBOTO_DIR = path.join(process.cwd(), "node_modules", "roboto-fontface", "fonts", "roboto");
-const ROBOTO_REGULAR = path.join(ROBOTO_DIR, "Roboto-Regular.ttf");
-const ROBOTO_BOLD = path.join(ROBOTO_DIR, "Roboto-Bold.ttf");
-const ROBOTO_BLACK = path.join(ROBOTO_DIR, "Roboto-Black.ttf");
+const FONT_PATHS = {
+  regular: path.join(ROBOTO_DIR, "Roboto-Regular.ttf"),
+  bold: path.join(ROBOTO_DIR, "Roboto-Bold.ttf"),
+  black: path.join(ROBOTO_DIR, "Roboto-Black.ttf")
+};
+
+type FontKey = keyof typeof FONT_PATHS;
+const fontCache = new Map<FontKey, opentype.Font>();
+
+function getFont(weight: FontKey) {
+  const cached = fontCache.get(weight);
+  if (cached) return cached;
+  const file = fs.readFileSync(FONT_PATHS[weight]);
+  const arrayBuffer = file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength) as ArrayBuffer;
+  const font = opentype.parse(arrayBuffer);
+  fontCache.set(weight, font);
+  return font;
+}
 
 function esc(value: string) {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function textPath(text: string, x: number, baseline: number, size: number, weight: FontKey, fill: string, letterSpacing = 0) {
+  const font = getFont(weight);
+  const pathData = font.getPath(text, x, baseline, size, { kerning: true }).toPathData(2);
+  return `<path d="${pathData}" fill="${fill}"/>`;
+}
+
+function textPathCentered(text: string, centerX: number, baseline: number, size: number, weight: FontKey, fill: string) {
+  const font = getFont(weight);
+  const advance = font.getAdvanceWidth(text, size, { kerning: true });
+  return textPath(text, centerX - advance / 2, baseline, size, weight, fill);
 }
 
 function wrapText(text: string, maxChars: number) {
@@ -63,23 +90,23 @@ function buildSvg(input: { symbol: string; signal: string; confidence: number; c
   const signalFont = input.signal === "HIGH_RISK" ? 82 : 92;
   const conclusionStart = 700;
   const conclusionMarkup = conclusionLines
-    .map((line, i) => `<text x="${MARGIN}" y="${conclusionStart + i * 62}" fill="${WHITE}" font-family="Roboto" font-size="48" font-weight="700">${esc(line)}</text>`)
+    .map((line, i) => textPath(line, MARGIN, conclusionStart + i * 62, 48, "bold", WHITE))
     .join("");
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
   <rect width="${WIDTH}" height="${HEIGHT}" fill="#000000"/>
   <rect x="${MARGIN}" y="${MARGIN}" width="${WIDTH - MARGIN * 2}" height="${HEIGHT - MARGIN * 2}" rx="28" fill="none" stroke="#1C1C1C" stroke-width="2"/>
-  <text x="${MARGIN}" y="155" fill="${YELLOW}" font-family="Roboto" font-size="28" font-weight="900" letter-spacing="7">BEENBE NEWS</text>
-  <text x="${MARGIN}" y="285" fill="${WHITE}" font-family="Roboto" font-size="82" font-weight="900">${esc(input.symbol)}</text>
-  <text x="${MARGIN}" y="410" fill="${color}" font-family="Roboto" font-size="${signalFont}" font-weight="900">${esc(input.signal)}</text>
+  ${textPath("BEENBE NEWS", MARGIN, 155, 28, "black", YELLOW)}
+  ${textPath(input.symbol, MARGIN, 285, 82, "black", WHITE)}
+  ${textPath(input.signal, MARGIN, 410, signalFont, "black", color)}
   <g transform="translate(${WIDTH - 390}, 215) scale(0.85)">${iconSvg(input.icon_category, color)}</g>
-  <text x="${MARGIN}" y="505" fill="${MUTED}" font-family="Roboto" font-size="30" font-weight="400">Evidence strength</text>
-  <text x="${MARGIN}" y="575" fill="${WHITE}" font-family="Roboto" font-size="54" font-weight="700">${Math.round(input.confidence)}/100</text>
+  ${textPath("Evidence strength", MARGIN, 505, 30, "regular", MUTED)}
+  ${textPath(`${Math.round(input.confidence)}/100`, MARGIN, 575, 54, "bold", WHITE)}
   <line x1="${MARGIN}" y1="620" x2="${WIDTH - MARGIN}" y2="620" stroke="#242424" stroke-width="3"/>
   ${conclusionMarkup}
   <line x1="${MARGIN}" y1="${HEIGHT - 185}" x2="${WIDTH - MARGIN}" y2="${HEIGHT - 185}" stroke="#242424" stroke-width="3"/>
-  <text x="${MARGIN}" y="${HEIGHT - 115}" fill="${MUTED}" font-family="Roboto" font-size="25" font-weight="400">${esc(input.attribution)}</text>
+  ${textPath(input.attribution, MARGIN, HEIGHT - 115, 25, "regular", MUTED)}
 </svg>`;
 }
 
@@ -96,14 +123,7 @@ export async function POST(request: Request) {
     if (!symbol || !conclusion) return NextResponse.json({ error: "A valid analysis result is required." }, { status: 400 });
 
     const svg = buildSvg({ symbol, signal, confidence, conclusion, icon_category, attribution });
-    const renderer = new Resvg(svg, {
-      fitTo: { mode: "original" },
-      font: {
-        fontFiles: [ROBOTO_REGULAR, ROBOTO_BOLD, ROBOTO_BLACK],
-        loadSystemFonts: false,
-        defaultFontFamily: "Roboto"
-      }
-    });
+    const renderer = new Resvg(svg, { fitTo: { mode: "original" } });
     const png = renderer.render().asPng();
 
     return NextResponse.json({
