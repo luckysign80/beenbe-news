@@ -6,6 +6,8 @@ export const dynamic = "force-dynamic";
 
 const BASE = "https://data-api.binance.vision";
 
+type KlineRow = [string, string, string, string, string, string, ...unknown[]];
+
 async function binance(path: string) {
   const res = await fetch(`${BASE}${path}`, { cache: "no-store" });
   const text = await res.text();
@@ -23,10 +25,19 @@ function normalizeSymbol(value: unknown) {
   return String(value ?? "").trim().toUpperCase().replace(/[\s/:-]+/g, "");
 }
 
-function candles(rows: unknown[]): { open: number; high: number; low: number; close: number; volume: number }[] {
-  return rows.map((k: unknown[]) => ({
-    open: Number(k[1]), high: Number(k[2]), low: Number(k[3]), close: Number(k[4]), volume: Number(k[5])
-  }));
+function candles(rows: unknown): { open: number; high: number; low: number; close: number; volume: number }[] {
+  if (!Array.isArray(rows)) return [];
+  return (rows as unknown[]).map((row): { open: number; high: number; low: number; close: number; volume: number } => {
+    if (!Array.isArray(row)) throw new Error("Invalid candlestick data received from Binance.");
+    const k = row as KlineRow;
+    return {
+      open: Number(k[1]),
+      high: Number(k[2]),
+      low: Number(k[3]),
+      close: Number(k[4]),
+      volume: Number(k[5])
+    };
+  });
 }
 
 export async function POST(request: Request) {
@@ -51,7 +62,7 @@ export async function POST(request: Request) {
       price: Number((price as { price: string }).price),
       change24h: Number((stats as { priceChangePercent: string }).priceChangePercent),
       volume24h: Number((stats as { volume: string }).volume),
-      timeframes: { h1: candles(h1 as unknown[]), h4: candles(h4 as unknown[]), d1: candles(d1 as unknown[]) },
+      timeframes: { h1: candles(h1), h4: candles(h4), d1: candles(d1) },
       orderBook: depth as { bids: [string, string][]; asks: [string, string][] }
     });
 
